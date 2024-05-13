@@ -217,6 +217,7 @@ class Game(BaseObject):
             enemy_name: The name of the enemy.
             enemy_position: The position of the enemy.
         """
+
         # Example logic: set the targeted enemy and perform an action
         self.targeted_enemy = (enemy_name, enemy_position)
         self.perform_attack(enemy_name, enemy_position)
