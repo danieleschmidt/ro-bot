@@ -1,4 +1,4 @@
-# This bot is no longer functional.
+# This bot is under redevelopment to restore functionality.
 
 It was developed as a proof of concept.
 At one point it was extensively "tested" and worked well for its purposes.

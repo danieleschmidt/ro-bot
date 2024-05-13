@@ -1,3 +1,5 @@
+# /data/process.py
+
 import ctypes as ct
 import logging
 from contextlib import suppress
@@ -65,6 +67,31 @@ class Memory(object):
     def __init__(self, process):
         self._process = process
 
+    def read_structure(self, addr: int, structure):
+        """
+        Reads a ctypes structure from memory.
+
+        :param addr: The memory address where the structure is located.
+        :param structure: The ctypes structure that will be read from memory.
+        :return: The populated ctypes structure or None if reading failed.
+        """
+        bytes_read = ct.c_ulong(0)
+        success = kernel32.ReadProcessMemory(self._process, addr, ct.byref(structure), ct.sizeof(structure), ct.byref(bytes_read))
+        if success and bytes_read.value == ct.sizeof(structure):
+            return structure
+        else:
+            log.error(f"Could not read structure from memory at address {hex(addr)}")
+            return None
+
+    def read_string(self, addr: int, max_length: int = 255):
+        buffer = ct.create_string_buffer(max_length)
+        bytes_read = ct.c_ulong(0)
+        if addr != 0x0 and kernel32.ReadProcessMemory(self._process, addr, buffer, max_length, ct.byref(bytes_read)):
+            return buffer.value.decode('utf-8', errors='ignore')
+        else:
+            log.error(f"Could not read string from memory at address {hex(addr)}")
+            return None
+
     def read(self, result, addr: int):
         kernel32.ReadProcessMemory(self._process, addr, ct.byref(result), ct.sizeof(result), 0)
         log.debug(f'Address: {hex(addr)}, value:{result.value}')
@@ -106,6 +133,7 @@ class Memory(object):
 class Process(object):
     PROCESS_VM_READ = 0x0010
     PROCESS_VM_WRITE = 0x0020
+    PROCESS_QUERY_INFORMATION = 0x0400
 
     def __init__(self, name: str, open_privileges=None):
         self.name = name
@@ -127,8 +155,11 @@ class Process(object):
     def open(self, privileges):
         if self.pid == 0:
             log.error('Process could not be opened - pid not found')
-            raise RuntimeError("Process could not be opened")
+            return
         self.handle = kernel32.OpenProcess(privileges, 0, self.pid)
+        if not self.handle:
+            log.error(f"Failed to open process {self.name} with PID {self.pid}")
+            return
         self.memory = Memory(self.handle)
 
     def close(self):

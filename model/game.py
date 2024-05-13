@@ -1,10 +1,16 @@
+# game.py
+
 import ctypes as ct
+import pyautogui
 import logging
+import os
 
 from data.process import Process, Window
 
 from model.base import BaseObject, Point, Signal
 from model.world import Map
+from model.object_detection import ObjectDetector
+from PIL import Image, ImageGrab
 
 log = logging.getLogger('app.game')
 
@@ -109,6 +115,8 @@ class Game(BaseObject):
 
     def __init__(self, window_name, process_name: str):
         super(Game, self).__init__()
+        self.object_detector = ObjectDetector(templates=self.load_enemy_templates())
+        self.targeted_enemy = None
 
         self.mouse_state = None
 
@@ -124,11 +132,132 @@ class Game(BaseObject):
         self.npcs = list()
         self.players = list()
 
+    def load_enemy_templates(self):
+        templates = {}
+        enemies_path = 'statics/enemies'
+        for filename in os.listdir(enemies_path):
+            if filename.endswith('.png'):
+                enemy_name = filename.split('.')[0]
+                templates[enemy_name] = os.path.join(enemies_path, filename)
+        return templates
+
+    def capture_screen(self) -> Image:
+        """
+        Capture the game screen.
+
+        Returns:
+            An Image object representing the captured screen.
+        """
+        # Assuming the use of PIL for image capture
+        bbox = self.window.get_screen_bbox()  # You need to implement this method
+        screen = ImageGrab.grab(bbox)
+        return screen
+
     def read(self):
         self.read_map()
         self.read_mouse_state()
         self.read_character()
         self.read_entities()
+        screen = self.capture_screen()
+        self.detect_enemies(screen)
+
+    def detect_enemies(self, screen):
+        # Use the object detector to find enemies on the screen
+        detected_enemies = self.object_detector.detect_objects(screen)
+        # Process detected enemies
+        for enemy in detected_enemies:
+            # Here you would add code to handle the enemy, e.g., targeting
+            print(f"Detected {enemy[0]} at {enemy[1:]}")
+
+        self.process_detected_enemies(detected_enemies)
+
+    def process_detected_enemies(self, detected_enemies):
+        # Process detected enemies and make decisions based on detection
+        for enemy in detected_enemies:
+            enemy_name, enemy_position = enemy[0], enemy[1:]
+            if self.should_target_enemy(enemy_name, enemy_position):
+                self.target_enemy(enemy_name, enemy_position)
+
+    def should_target_enemy(self, enemy_name, enemy_position):
+        """
+        Determine if the enemy should be targeted based on name and position.
+
+        Args:
+            enemy_name: The name of the enemy.
+            enemy_position: The position of the enemy.
+
+        Returns:
+            A boolean indicating whether the enemy should be targeted.
+        """
+        # Example logic: target if enemy is within a certain range
+        enemy_range = self.get_enemy_target_range(enemy_name)  # Get the range within which to target this enemy
+        distance = self.calculate_distance(self.char.x, self.char.y, *enemy_position)
+        return distance <= enemy_range
+
+    def get_enemy_target_range(self, enemy_name):
+        """
+        Get the range within which to target a specific enemy.
+
+        Args:
+            enemy_name: The name of the enemy.
+
+        Returns:
+            The range within which the enemy should be targeted.
+        """
+        # This method should be implemented based on game-specific logic
+        # For example, different enemies might have different target ranges
+        # Here is a placeholder implementation that you should replace
+        return 100  # Placeholder value, replace with actual game logic
+
+    def target_enemy(self, enemy_name, enemy_position):
+        """
+        Target the enemy.
+
+        Args:
+            enemy_name: The name of the enemy.
+            enemy_position: The position of the enemy.
+        """
+        # Example logic: set the targeted enemy and perform an action
+        self.targeted_enemy = (enemy_name, enemy_position)
+        self.perform_attack(enemy_name, enemy_position)
+
+    def perform_attack(self, enemy_name, enemy_position):
+        """
+        Perform an attack on the targeted enemy.
+
+        Args:
+            enemy_name: The name of the enemy.
+            enemy_position: The position of the enemy.
+        """
+        # Simulate pressing the F3 key to perform an attack on the targeted enemy
+        pyautogui.press('f3')
+        log.info(f"Performed attack on {enemy_name} at {enemy_position}")
+
+    def send_attack_command(self, enemy_name, enemy_position):
+        """
+        Send the attack command to the game client.
+
+        Args:
+            enemy_name: The name of the enemy.
+            enemy_position: The position of the enemy.
+        """
+        # This method should be implemented based on game-specific logic
+        # Here is a placeholder implementation that you should replace
+        print(f"Sending attack command for {enemy_name} at {enemy_position}")
+        # Replace the above print statement with actual game command logic
+
+    def calculate_distance(self, x1, y1, x2, y2):
+        """
+        Calculate the distance between two points.
+
+        Args:
+            x1, y1: Coordinates of the first point.
+            x2, y2: Coordinates of the second point.
+
+        Returns:
+            The distance between the two points.
+        """
+        return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
     def read_mouse_state(self):
         self.mouse_state = MouseState()

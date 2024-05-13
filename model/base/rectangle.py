@@ -1,4 +1,6 @@
-from PySide2 import QtCore
+# /model/base/rectangle.py
+
+from PySide6 import QtCore
 
 from .base import BaseObject
 from .point import Point

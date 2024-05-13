@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 import sys
 import logging
@@ -21,9 +21,13 @@ def __init_log__():
 
 if __name__ == "__main__":
     __init_log__()
+    log = logging.getLogger('app')
+    log.info('Starting the Robot application...')
 
     app = QApplication(sys.argv)
 
-    robot = Robot(app, 'OriginsRO', 'oriro.exe')
+    robot = Robot(app, 'Ragnarok', 'Ragexe.exe')
+    log.info('Robot instance created successfully.')
 
     sys.exit(app.exec_())
+    log.info('Robot application exited.')

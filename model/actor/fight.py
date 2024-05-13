@@ -1,3 +1,5 @@
+# /model/actor/fight.py
+
 import logging
 
 from model.world import PathNotFoundException
@@ -15,6 +17,8 @@ TARGET_PRIORITY_MAP = {1271: 1, 1077: 1} # alligator / poison spore
 # TARGET_PRIORITY_MAP = {1170: 2, 1188: 2, 1186: 2, 1068: 2, 1028: 2, 1026: 2, 1016: 1}
 
 class Fight:
+
+    MINIMUM_RANGE_DISTANCE = 10  # Minimum distance to maintain from the target for ranged characters
 
     def __init__(self, input):
         self.input = input
@@ -142,7 +146,12 @@ class Fight:
 
         # enemy is pretty far away, the router is probably not needed though
         # with an interim point to walk to
-        # FIXME: for ranged characters
+        # Check if character is ranged and maintain minimum distance
+        if self.char.is_ranged and self.char.distance(self.target) > self.MINIMUM_RANGE_DISTANCE:
+            # Calculate an interim point to move within range but not too close
+            interim = self.target.position - ((self.target.position - self.char.position).normalized() * self.MINIMUM_RANGE_DISTANCE)
+            self.input.mouse_click(interim.x, interim.y)
+            log.debug(f'Moving to interim point {interim} to engage target {self.target} at range')
         if self.char.distance(self.target) > 10:
             interim = self.char + ((self.target - self.char) / 2)
             log.debug(f'Moving to {interim} in order to reach target {self.target}')

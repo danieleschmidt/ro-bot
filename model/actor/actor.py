@@ -1,3 +1,5 @@
+# /model/actor/actor.py
+
 import pyautogui as atg
 import random
 import logging
